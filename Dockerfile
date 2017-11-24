@@ -36,7 +36,7 @@ COPY isc-dhcp-server /etc/default/
 COPY ntp.conf /etc/
 
 RUN useradd -ms /bin/bash rlogin_user
-RUN echo -e "rlogin\nrlogin" | passwd rlogin_user
+RUN /bin/echo -e "rlogin\nrlogin" | passwd rlogin_user
 
 RUN DEBIAN_FRONTEND=noninteractive \
 	apt-get -y --no-install-recommends install \
