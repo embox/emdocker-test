@@ -25,11 +25,18 @@ COPY smb.conf /etc/samba/
 RUN DEBIAN_FRONTEND=noninteractive \
 	apt-get -y --no-install-recommends install \
 		net-tools \
-		isc-dhcp-server
+		isc-dhcp-server \
+		iputils-ping \
+		telnet \
+		ntp \
+		openbsd-inetd
 
 COPY dhcpd.conf /etc/dhcp/
-COPY isc-dhcp-server /etc/default
+COPY isc-dhcp-server /etc/default/
+COPY ntp.conf /etc/
 
+RUN useradd -ms /bin/bash rlogin_user
+RUN echo -e "rlogin\nrlogin" | passwd rlogin_user
 
 RUN DEBIAN_FRONTEND=noninteractive \
 	apt-get -y --no-install-recommends install \
@@ -46,6 +53,8 @@ CMD mount -t tmpfs none /var/nfs_test && \
 	/etc/init.d/nfs-kernel-server restart && \
 	/etc/init.d/nmbd restart && \
 	/etc/init.d/smbd restart && \
+	/etc/init.d/ntp restart && \
+	inetd && \
 	/usr/local/sbin/docker_start.sh
 
 RUN apt-get clean
