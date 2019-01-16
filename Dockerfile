@@ -48,6 +48,12 @@ RUN DEBIAN_FRONTEND=noninteractive \
 		expect \
 		snmp
 
+RUN DEBIAN_FRONTEND=noninteractive \
+	apt-get -y --no-install-recommends install \
+		xvfb \
+		xvnc4viewer \
+		ffmpeg
+
 CMD mount -t tmpfs none /var/nfs_test && \
 	service rpcbind restart && \
 	/etc/init.d/nfs-kernel-server restart && \
