@@ -54,6 +54,10 @@ RUN DEBIAN_FRONTEND=noninteractive \
 		xvnc4viewer \
 		ffmpeg
 
+RUN DEBIAN_FRONTEND=noninteractive \
+	apt-get -y --no-install-recommends install \
+	dosfstools
+
 CMD mount -t tmpfs none /var/nfs_test && \
 	service rpcbind restart && \
 	/etc/init.d/nfs-kernel-server restart && \
