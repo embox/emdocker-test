@@ -6,6 +6,7 @@ RUN apt-get update && \
 		nfs-kernel-server \
 		nfs-common \
 		samba \
+		mkisofs \
 		net-tools \
 		isc-dhcp-server \
 		iputils-ping \
