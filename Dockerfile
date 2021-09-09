@@ -20,6 +20,7 @@ RUN apt-get update && \
 		xvfb \
 		xvnc4viewer \
 		ffmpeg \
+		git \
 		dosfstools && \
 	apt-get clean && \
 	rm -rf /var/lib/apt /var/cache/apt
