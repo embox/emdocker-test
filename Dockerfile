@@ -48,6 +48,7 @@ COPY --from=build / /
 ENV PATH=$PATH:\
 /opt/gcc-arm-none-eabi-6-2017-q2-update/bin:\
 /opt/gcc-arm-8.3-2019.03-x86_64-aarch64-elf/bin:\
+/opt/riscv64-unknown-elf-gcc-8.2.0-2019.05.3-x86_64-linux-ubuntu14/bin:\
 /opt/microblaze-elf-toolchain/bin:\
 /opt/mips-elf-toolchain/bin:\
 /opt/powerpc-elf-toolchain/bin:\
