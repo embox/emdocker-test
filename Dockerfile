@@ -1,5 +1,5 @@
 
-FROM embox/emdocker as build
+FROM ghcr.io/embox/emdocker/emdocker:latest as build
 
 RUN apt-get update && \
 	DEBIAN_FRONTEND=noninteractive apt-get -y --no-install-recommends install \
