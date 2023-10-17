@@ -25,6 +25,10 @@ RUN apt-get update && \
 	apt-get clean && \
 	rm -rf /var/lib/apt /var/cache/apt
 
+## risc-v crosscompiler
+RUN curl -k -L -s "https://static.dev.sifive.com/dev-tools/riscv64-unknown-elf-gcc-8.2.0-2019.05.3-x86_64-linux-ubuntu14.tar.gz" | \
+	tar -xzC /opt
+
 # x86/test/fs nfs
 RUN mkdir -p -m 777 /var/nfs_test
 COPY exports /etc/
