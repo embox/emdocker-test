@@ -1,0 +1,11 @@
+
+[Public] 
+path = /var/cifs_test/
+read only = no
+writeable = yes
+browseable = yes
+available = yes
+guest ok = yes
+public = yes
+printable = no
+create mask = 0666

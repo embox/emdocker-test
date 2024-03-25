@@ -1,8 +1,50 @@
 
-FROM embox/emdocker as build
+FROM debian:bookworm
+MAINTAINER Anton Kozlov <drakon.mega@gmail.com>
 
+## python2 (deprecated)
+RUN echo "deb http://deb.debian.org/debian bullseye main"          > /etc/apt/sources.list.d/bullseye.list
+RUN echo "deb http://deb.debian.org/debian bullseye-updates main" >> /etc/apt/sources.list.d/bullseye.list
+RUN echo "deb http://security.debian.org bullseye-security main"  >> /etc/apt/sources.list.d/bullseye.list
+
+## Container utils
 RUN apt-get update && \
 	DEBIAN_FRONTEND=noninteractive apt-get -y --no-install-recommends install \
+		sudo \
+		iptables \
+		openssh-server \
+		iproute2 \
+		bzip2 \
+		unzip \
+		xz-utils \
+		python3 \
+		python2 \
+		python-is-python2 \
+		curl \
+		dpkg \
+		make \
+		patch \
+		cpio \
+		build-essential \
+		binutils \
+		gcc \
+		gcc-multilib \
+		g++-multilib \
+		gdb \
+		qemu-system \
+		ruby \
+		bison \
+		flex \
+		bc \
+		autoconf \
+		pkg-config \
+		mtd-utils \
+		ntfs-3g \
+		autotools-dev \
+		automake \
+		xutils-dev \
+		libtool \
+		rpcbind \
 		nfs-kernel-server \
 		nfs-common \
 		samba \
@@ -18,37 +60,37 @@ RUN apt-get update && \
 		expect \
 		snmp \
 		xvfb \
-		xvnc4viewer \
+		xauth \
+		tigervnc-standalone-server \
+		tigervnc-common \
+		tigervnc-viewer \
 		ffmpeg \
 		git \
+		mime-support \
 		dosfstools && \
 	apt-get clean && \
-	rm -rf /var/lib/apt /var/cache/apt
+	rm -rf /var/lib/apt /var/cache/apt && \
+	rm /etc/apt/sources.list.d/bullseye.list
+
+## arm crosscompiler
+RUN curl -k -L "https://developer.arm.com/-/media/Files/downloads/gnu-rm/6-2017q2/gcc-arm-none-eabi-6-2017-q2-update-linux.tar.bz2" | \
+	tar -jxC /opt
+
+## aarch64 crosscompiler
+RUN curl -k -L "https://developer.arm.com/-/media/Files/downloads/gnu-a/8.3-2019.03/binrel/gcc-arm-8.3-2019.03-x86_64-aarch64-elf.tar.xz" | \
+	tar -xJC /opt
 
 ## risc-v crosscompiler
 RUN curl -k -L -s "https://static.dev.sifive.com/dev-tools/riscv64-unknown-elf-gcc-8.2.0-2019.05.3-x86_64-linux-ubuntu14.tar.gz" | \
 	tar -xzC /opt
 
-# x86/test/fs nfs
-RUN mkdir -p -m 777 /var/nfs_test
-COPY exports /etc/
+## other crosscompilers
+RUN for a in microblaze mips powerpc sparc; do \
+	curl -k -L "https://github.com/embox/crosstool/releases/download/2.42-13.2.0-14.2/$a-elf-toolchain.tar.bz2" | \
+		tar -jxC /opt; \
+	done
 
-# x86/test/fs cifs
-RUN mkdir -p -m 777 /var/cifs_test
-COPY smb.conf /etc/samba/
-
-# x86/test/net
-COPY dhcpd.conf /etc/dhcp/
-COPY isc-dhcp-server /etc/default/
-COPY ntp.conf /etc/
-RUN useradd -u 65534 -o -ms /bin/bash rlogin_user
-RUN /bin/echo -e "rlogin\nrlogin" | passwd rlogin_user
-
-FROM scratch
-MAINTAINER Anton Kozlov <drakon.mega@gmail.com>
-
-COPY --from=build / /
-
+## Set environment variables
 ENV PATH=$PATH:\
 /opt/gcc-arm-none-eabi-6-2017-q2-update/bin:\
 /opt/gcc-arm-8.3-2019.03-x86_64-aarch64-elf/bin:\
@@ -58,13 +100,32 @@ ENV PATH=$PATH:\
 /opt/powerpc-elf-toolchain/bin:\
 /opt/sparc-elf-toolchain/bin
 
+## Allow members of group sudo to execute any command
+RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+## x86/test/fs
+RUN for i in $(seq 0 9); do \
+	mknod /dev/loop$i -m0660 b 7 $i; done
+
+## x86/test/fs nfs
+RUN mkdir -p -m 777 /var/nfs_test
+COPY exports /etc/
+
+## x86/test/fs cifs
+RUN mkdir -p -m 777 /var/cifs_test
+COPY smb.conf.public /etc/samba/
+RUN cat /etc/samba/smb.conf.public >> /etc/samba/smb.conf && \
+	rm /etc/samba/smb.conf.public
+
+## x86/test/net
+COPY dhcpd.conf /etc/dhcp/
+COPY isc-dhcp-server /etc/default/
+COPY ntp.conf /etc/
+
 CMD mount -t tmpfs none /var/nfs_test && \
-	service rpcbind restart && \
-	/etc/init.d/nfs-kernel-server restart && \
-	/etc/init.d/nmbd restart && \
-	/etc/init.d/smbd restart && \
-	/etc/init.d/ntp restart && \
-	inetd && \
-	/usr/local/sbin/docker_start.sh
-
-
+	systemctl restart rpcbind && \
+	systemctl restart nfs-kernel-server && \
+	systemctl restart nmbd && \
+	systemctl restart smbd && \
+	systemctl restart ntp && \
+	systemctl restart inetd
