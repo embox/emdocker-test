@@ -1,70 +1,75 @@
 
-FROM embox/emdocker as build
+FROM debian:bookworm
 
+## Update the repository and install utils
 RUN apt-get update && \
 	DEBIAN_FRONTEND=noninteractive apt-get -y --no-install-recommends install \
-		nfs-kernel-server \
-		nfs-common \
-		samba \
-		mkisofs \
-		net-tools \
-		isc-dhcp-server \
-		iputils-ping \
+		sudo \
+		bzip2 \
+		unzip \
+		xz-utils \
+		python3 \
+		curl \
+		dpkg \
+		wget \
+		git \
+		patch \
+		cpio \
+		build-essential \
+		binutils \
+		gcc \
+		gcc-multilib \
+		g++-multilib \
+		qemu-system \
+		bison \
+		flex \
+		bc \
+		ruby \
+		make \
+		cmake \
+		autoconf \
+		automake \
+		autotools-dev \
+		libtool \
+		libmpc-dev \
 		telnet \
 		ntp \
-		openbsd-inetd \
 		psmisc \
-		wget \
-		expect \
-		snmp \
-		xvfb \
-		xvnc4viewer \
-		ffmpeg \
-		git \
-		dosfstools && \
+		net-tools \
+		iproute2 \
+		iptables \
+		iputils-ping
+
+## Install python2 (deprecated)
+COPY bullseye.list /etc/apt/sources.list.d/
+RUN apt-get update && \
+	DEBIAN_FRONTEND=noninteractive apt-get -y --no-install-recommends install \
+	python2 \
+	python-is-python2 && \
 	apt-get clean && \
-	rm -rf /var/lib/apt /var/cache/apt
+	rm -rf /var/lib/apt /var/cache/apt && \
+	rm /etc/apt/sources.list.d/bullseye.list
 
-## risc-v crosscompiler
-RUN curl -k -L -s "https://static.dev.sifive.com/dev-tools/riscv64-unknown-elf-gcc-8.2.0-2019.05.3-x86_64-linux-ubuntu14.tar.gz" | \
-	tar -xzC /opt
+## Install crosscompilers
+RUN for a in aarch64-elf arm-none-eabi i386-elf microblaze-elf mips-mti-elf powerpc-elf riscv64-unknown-elf sparc-elf; do \
+	curl -k -L "https://github.com/embox/crosstool/releases/download/2.42-13.3.0-14.2/$a-toolchain.tar.bz2" | \
+		tar -jxC /opt; \
+	done
 
-# x86/test/fs nfs
-RUN mkdir -p -m 777 /var/nfs_test
-COPY exports /etc/
-
-# x86/test/fs cifs
-RUN mkdir -p -m 777 /var/cifs_test
-COPY smb.conf /etc/samba/
-
-# x86/test/net
-COPY dhcpd.conf /etc/dhcp/
-COPY isc-dhcp-server /etc/default/
-COPY ntp.conf /etc/
-RUN useradd -u 65534 -o -ms /bin/bash rlogin_user
-RUN /bin/echo -e "rlogin\nrlogin" | passwd rlogin_user
-
-FROM scratch
-MAINTAINER Anton Kozlov <drakon.mega@gmail.com>
-
-COPY --from=build / /
-
+## Set environment variables
 ENV PATH=$PATH:\
-/opt/gcc-arm-none-eabi-6-2017-q2-update/bin:\
-/opt/gcc-arm-8.3-2019.03-x86_64-aarch64-elf/bin:\
-/opt/riscv64-unknown-elf-gcc-8.2.0-2019.05.3-x86_64-linux-ubuntu14/bin:\
+/opt/aarch64-elf-toolchain/bin:\
+/opt/arm-none-eabi-toolchain/bin:\
+/opt/i386-elf-toolchain/bin:\
 /opt/microblaze-elf-toolchain/bin:\
-/opt/mips-elf-toolchain/bin:\
+/opt/mips-mti-elf-toolchain/bin:\
 /opt/powerpc-elf-toolchain/bin:\
+/opt/riscv64-unknown-elf-toolchain/bin:\
 /opt/sparc-elf-toolchain/bin
 
-CMD mount -t tmpfs none /var/nfs_test && \
-	service rpcbind restart && \
-	/etc/init.d/nfs-kernel-server restart && \
-	/etc/init.d/nmbd restart && \
-	/etc/init.d/smbd restart && \
-	/etc/init.d/ntp restart && \
-	inetd && \
-	/usr/local/sbin/docker_start.sh
+## Set working directory
+VOLUME /embox
+WORKDIR /embox
 
-
+## Default command
+CMD ["/usr/bin/bash"]
