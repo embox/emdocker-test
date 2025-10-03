@@ -52,7 +52,7 @@ RUN apt-get update && \
 
 ## Install crosscompilers
 RUN for a in aarch64-elf arm-none-eabi i386-elf microblaze-elf mips-mti-elf powerpc-elf riscv64-unknown-elf sparc-elf; do \
-	curl -k -L "https://github.com/embox/crosstool/releases/download/2.42-13.3.0-14.2/$a-toolchain.tar.bz2" | \
+	curl -k -L "https://github.com/embox/crosstool/releases/download/2.44-14.3.0-15.2/$a-toolchain.tar.bz2" | \
 		tar -jxC /opt; \
 	done
 
